@@ -4,14 +4,21 @@ use ggez;
 use ggez::event;
 use ggez::event::KeyCode;
 use ggez::graphics;
+use ggez::graphics::Rect;
 use ggez::nalgebra as na;
 use ggez::timer::delta;
+
+use crate::state::Player;
 
 pub struct Tank {
     pub position: na::Point2<f32>,
     pub tank_direction: na::Vector2<f32>,
     pub tank_rotation: f32,
     pub texture: Option<graphics::Image>,
+    pub turret_texture: Option<graphics::Image>,
+    pub turret_direction: na::Vector2<f32>,
+    pub turret_rotation: f32,
+    pub player: Player,
 }
 
 impl event::EventHandler for Tank {
@@ -24,12 +31,18 @@ impl event::EventHandler for Tank {
     }
 
     fn draw(&mut self, ctx: &mut ggez::Context) -> ggez::GameResult {
-        let param = graphics::DrawParam::new()
+        let base_param = graphics::DrawParam::new()
             .dest(self.position)
             .offset(na::Point2::from([0.5, 0.5]))
             .rotation(self.tank_rotation);
+        let turret_param = graphics::DrawParam::new()
+            .dest(self.position)
+            .offset(na::Point2::from([0.5, 0.5]))
+            .src(self.get_player_turret())
+            .rotation(self.tank_rotation);
 
-        graphics::draw(ctx, self.texture.as_ref().unwrap(), param)?;
+        graphics::draw(ctx, self.texture.as_ref().unwrap(), base_param)?;
+        graphics::draw(ctx, self.turret_texture.as_ref().unwrap(), turret_param)?;
         Ok(())
     }
 }
@@ -68,6 +81,38 @@ impl Tank {
             self.position.y + (direction * self.tank_direction.y),
         ]);
     }
+
+    pub(crate) fn get_player_turret(&self) -> Rect {
+        let draw_height = 0.5;
+        let draw_width = 0.5;
+
+        match self.player {
+            Player::P1 => Rect {
+                x: 0.,
+                y: 0.,
+                h: draw_height,
+                w: draw_width,
+            },
+            Player::P2 => Rect {
+                x: draw_width,
+                y: 0.,
+                h: draw_height,
+                w: draw_width,
+            },
+            Player::P3 => Rect {
+                x: 0.,
+                y: draw_height,
+                h: draw_height,
+                w: draw_width,
+            },
+            Player::P4 => Rect {
+                x: draw_width,
+                y: draw_height,
+                h: draw_height,
+                w: draw_width,
+            },
+        }
+    }
 }
 
 #[cfg(test)]
@@ -76,14 +121,14 @@ mod test {
 
     #[test]
     fn initial_info() {
-        let tank = tank();
+        let tank = tank(Player::P1);
         assert_eq!(tank.position, na::Point2::from([400., 300.]));
         assert_eq!(tank.tank_direction, na::Vector2::from([-1., 0.]));
     }
 
     #[test]
     fn move_forward() {
-        let mut tank = tank();
+        let mut tank = tank(Player::P1);
         let keys = vec![KeyCode::W].into_iter().collect();
         tank.movement(&keys);
         assert_eq!(tank.position, na::Point2::from([399., 300.]));
@@ -94,7 +139,7 @@ mod test {
 
     #[test]
     fn move_backwards() {
-        let mut tank = tank();
+        let mut tank = tank(Player::P1);
         let keys = vec![KeyCode::S].into_iter().collect();
         tank.movement(&keys);
         assert_eq!(tank.position, na::Point2::from([401., 300.]));
@@ -105,7 +150,7 @@ mod test {
 
     #[test]
     fn turn_left() {
-        let mut tank = tank();
+        let mut tank = tank(Player::P1);
         let keys = vec![KeyCode::A].into_iter().collect();
         tank.rotation(&keys, 0.3);
         let keys = vec![KeyCode::W].into_iter().collect();
@@ -121,7 +166,7 @@ mod test {
 
     #[test]
     fn turn_right() {
-        let mut tank = tank();
+        let mut tank = tank(Player::P1);
         let keys = vec![KeyCode::D].into_iter().collect();
         tank.rotation(&keys, 0.3);
         let keys = vec![KeyCode::S].into_iter().collect();
@@ -135,12 +180,63 @@ mod test {
         assert_eq!(tank.position, na::Point2::from([401.65204, 301.01288]));
     }
 
-    fn tank() -> Tank {
+    #[test]
+    fn turret_drawing_reagion() {
+        let tank1 = tank(Player::P1);
+        assert_eq!(
+            tank1.get_player_turret(),
+            Rect {
+                x: 0.,
+                y: 0.,
+                h: 0.5,
+                w: 0.5,
+            }
+        );
+
+        let tank2 = tank(Player::P2);
+        assert_eq!(
+            tank2.get_player_turret(),
+            Rect {
+                x: 0.5,
+                y: 0.,
+                h: 0.5,
+                w: 0.5,
+            }
+        );
+
+        let tank3 = tank(Player::P3);
+        assert_eq!(
+            tank3.get_player_turret(),
+            Rect {
+                x: 0.,
+                y: 0.5,
+                h: 0.5,
+                w: 0.5,
+            }
+        );
+
+        let tank4 = tank(Player::P4);
+        assert_eq!(
+            tank4.get_player_turret(),
+            Rect {
+                x: 0.5,
+                y: 0.5,
+                h: 0.5,
+                w: 0.5,
+            }
+        );
+    }
+
+    fn tank(player: Player) -> Tank {
         Tank {
             position: na::Point2::from([400., 300.]),
             tank_direction: na::Vector2::from([-1., 0.]),
             tank_rotation: 0.,
             texture: None,
+            turret_texture: None,
+            turret_direction: na::Vector2::from([-1., 0.]),
+            turret_rotation: 0.,
+            player,
         }
     }
 }
