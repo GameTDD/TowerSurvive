@@ -1,0 +1,44 @@
+name: Rust
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  game_fmt:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: fmt
+      run: cargo fmt -- --check
+      
+  game_clippy:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: install -libs
+      run: sudo apt-get install libasound2-dev libudev-dev pkg-config
+    - name: install-clippy
+      run: rustup component add clippy
+    - name: clippy
+      run: cargo clippy -- -W clippy::pedantic
+      
+  game_test:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: install -libs
+      run: sudo apt-get update && sudo apt-get install libasound2-dev libudev-dev pkg-config libxcb-randr0 libxcb-randr0-dev
+    - name: Run tests
+      run: cargo build && cargo test
