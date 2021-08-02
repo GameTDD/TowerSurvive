@@ -9,7 +9,6 @@ pub mod state;
 
 use state::{window_state_mode, MainState};
 
-
 pub fn main() -> ggez::GameResult {
     let resources_dir = path::PathBuf::from("./resources");
     let cb = ggez::ContextBuilder::new("tank_survive", "naomijub")
