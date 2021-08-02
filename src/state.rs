@@ -17,7 +17,8 @@ impl MainState {
         let sc = screen_coordinates(ctx);
         let tank = Tank {
             position: na::Point2::from([sc.w / 2., sc.h / 2.]),
-            texture: graphics::Image::new(ctx, "/TankBase.png")?,
+            direction: na::Vector2::from([-1., 0.]),
+            texture: Some(graphics::Image::new(ctx, "/TankBase.png")?),
         };
         let s = MainState { tank };
         Ok(s)
@@ -25,7 +26,8 @@ impl MainState {
 }
 
 impl event::EventHandler for MainState {
-    fn update(&mut self, _ctx: &mut ggez::Context) -> ggez::GameResult {
+    fn update(&mut self, ctx: &mut ggez::Context) -> ggez::GameResult {
+        self.tank.update(ctx)?;
         Ok(())
     }
 
