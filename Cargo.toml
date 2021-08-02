@@ -1,5 +1,5 @@
 [package]
-name = "TowerSurvive"
+name = "tower_survive"
 version = "0.1.0"
 authors = ["Julia Naomi <jnboeira@outlook.com>"]
 edition = "2018"
