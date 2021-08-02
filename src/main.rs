@@ -4,8 +4,8 @@ use ggez;
 use ggez::conf::WindowSetup;
 use ggez::event;
 
-pub mod objects;
-pub mod state;
+mod objects;
+mod state;
 
 use state::{window_state_mode, MainState};
 
