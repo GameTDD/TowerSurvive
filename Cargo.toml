@@ -8,3 +8,9 @@ edition = "2018"
 
 [dependencies]
 ggez = "0.5" 
+
+[dev-dependencies]
+test_ggez = "*"
+
+[[example]]
+name = "render_tank"
