@@ -1,2 +1,3 @@
 # TowerSurvive
-# Tower Survive game with Rust and GGEZ
+
+Tower Survive game done via TDD with Rust and GGEZ
