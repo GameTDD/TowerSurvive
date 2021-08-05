@@ -5,6 +5,7 @@ use ggez::event;
 use ggez::event::KeyCode;
 use ggez::graphics::Rect;
 use ggez::graphics::{self, screen_coordinates};
+use ggez::input::mouse;
 use ggez::nalgebra as na;
 use ggez::timer::delta;
 
@@ -26,8 +27,10 @@ impl event::EventHandler for Tank {
         let keys = ggez::input::keyboard::pressed_keys(ctx);
         let delta = delta(ctx).as_secs_f32();
         let screen_coord = screen_coordinates(ctx);
+        let mouse_position = mouse::position(ctx);
         self.movement(keys, screen_coord);
         self.rotation(keys, delta);
+        self.update_turret_direction(mouse_position.into());
         Ok(())
     }
 
@@ -40,7 +43,7 @@ impl event::EventHandler for Tank {
             .dest(self.position)
             .offset(na::Point2::from([0.5, 0.5]))
             .src(self.get_player_turret())
-            .rotation(self.tank_rotation);
+            .rotation(self.turret_rotation);
 
         graphics::draw(ctx, self.texture.as_ref().unwrap(), base_param)?;
         graphics::draw(ctx, self.turret_texture.as_ref().unwrap(), turret_param)?;
@@ -59,7 +62,7 @@ impl Tank {
         }
     }
 
-    fn rotation(&mut self, keys: &HashSet<KeyCode>, delta: f32) {
+    pub fn rotation(&mut self, keys: &HashSet<KeyCode>, delta: f32) {
         if keys.contains(&KeyCode::D) || keys.contains(&KeyCode::Right) {
             self.tank_rotation += delta;
             self.update_direction();
@@ -69,6 +72,16 @@ impl Tank {
             self.tank_rotation -= delta;
             self.update_direction();
         }
+    }
+
+    pub fn update_turret_direction(&mut self, mouse_position: na::Point2<f32>) {
+        let mouse = na::Vector2::from([mouse_position.x, mouse_position.y]);
+        let origin = na::Vector2::from([self.position.x, self.position.y]);
+        let direction: na::Vector2<f32> = (mouse - origin).into();
+        let angle = (mouse.y - origin.y).atan2(origin.x - mouse.x);
+
+        self.turret_direction = direction.normalize();
+        self.turret_rotation = -angle;
     }
 
     fn update_direction(&mut self) {
@@ -201,6 +214,33 @@ mod test {
         let keys = vec![KeyCode::S].into_iter().collect();
         tank.movement(&keys, screen_coord);
         assert_eq!(tank.position, na::Point2::from([400., 300.]));
+    }
+
+    #[test]
+    fn turret_rotation_direction() {
+        let mut tank = tank(Player::P1);
+        tank.update_turret_direction(na::Point2::from([500., 300.]));
+        assert_eq!(tank.turret_rotation, -3.1415925);
+        assert_eq!(tank.turret_direction, na::Vector2::from([1., 0.]));
+
+        tank.update_turret_direction(na::Point2::from([100., 300.]));
+        assert_eq!(tank.turret_rotation, -0.);
+        assert_eq!(tank.turret_direction, na::Vector2::from([-1., 0.]));
+
+        tank.update_turret_direction(na::Point2::from([400., 400.]));
+        assert_eq!(tank.turret_rotation, -1.5707964);
+        assert_eq!(tank.turret_direction, na::Vector2::from([0., 1.]));
+
+        tank.update_turret_direction(na::Point2::from([400., 200.]));
+        assert_eq!(tank.turret_rotation, 1.5707964);
+        assert_eq!(tank.turret_direction, na::Vector2::from([0., -1.]));
+
+        tank.update_turret_direction(na::Point2::from([540., 410.]));
+        assert_eq!(tank.turret_rotation, -2.4756234);
+        assert_eq!(
+            tank.turret_direction,
+            na::Vector2::from([0.78631836, 0.6178216])
+        );
     }
 
     #[test]
