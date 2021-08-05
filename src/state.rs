@@ -1,13 +1,17 @@
 use ggez;
 use ggez::conf::WindowMode;
 use ggez::event;
+use ggez::event::KeyCode;
 use ggez::graphics;
 use ggez::graphics::screen_coordinates;
+use ggez::graphics::Rect;
 use ggez::nalgebra as na;
 use ggez::Context;
 
+use crate::objects::bullet::{remove_bullet_if_outside_game_scren, Bullet};
 use crate::objects::Tank;
 
+#[allow(dead_code)]
 pub enum Player {
     P1,
     P2,
@@ -16,7 +20,9 @@ pub enum Player {
 }
 
 pub struct MainState {
-    tank: Tank,
+    pub tank: Tank,
+    pub bullet: Option<Bullet>,
+    pub coordinate: Rect,
 }
 
 impl MainState {
@@ -32,7 +38,11 @@ impl MainState {
             turret_rotation: 0.,
             player,
         };
-        let s = MainState { tank };
+        let s = MainState {
+            tank,
+            coordinate: sc,
+            bullet: None,
+        };
         Ok(s)
     }
 }
@@ -40,14 +50,44 @@ impl MainState {
 impl event::EventHandler for MainState {
     fn update(&mut self, ctx: &mut ggez::Context) -> ggez::GameResult {
         self.tank.update(ctx)?;
+        if let Some(bullet) = &mut self.bullet {
+            let coord = self.coordinate.clone();
+            bullet.update(ctx)?;
+            remove_bullet_if_outside_game_scren(bullet.position, self, coord);
+        } else {
+            let keys = ggez::input::keyboard::pressed_keys(ctx);
+            let left_mouse_button_pressed =
+                ggez::input::mouse::button_pressed(ctx, event::MouseButton::Left);
+            self.fire_bullet(keys, left_mouse_button_pressed);
+        }
         Ok(())
     }
 
     fn draw(&mut self, ctx: &mut ggez::Context) -> ggez::GameResult {
         graphics::clear(ctx, [0.83, 0.69, 0.51, 1.0].into());
         self.tank.draw(ctx)?;
+        if let Some(bullet) = &mut self.bullet {
+            bullet.draw(ctx)?;
+        }
         graphics::present(ctx)?;
         Ok(())
+    }
+}
+
+impl MainState {
+    fn fire_bullet(
+        &mut self,
+        keys: &std::collections::HashSet<KeyCode>,
+        left_mouse_button_pressed: bool,
+    ) {
+        if keys.contains(&KeyCode::Space) || left_mouse_button_pressed {
+            self.bullet = Some(Bullet {
+                position: na::Point2::from(self.tank.position),
+                direction: self.tank.turret_direction,
+                rotation: self.tank.turret_rotation,
+                origin: na::Vector2::from([self.tank.position.x, self.tank.position.y]),
+            });
+        }
     }
 }
 
@@ -63,5 +103,74 @@ pub fn window_state_mode() -> WindowMode {
         max_width: 1600.,
         max_height: 1200.,
         resizable: true,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn random_keys_dont_fire_bullet() {
+        let mut main_state = main();
+        let keys = &vec![KeyCode::W, KeyCode::A, KeyCode::K, KeyCode::V]
+            .into_iter()
+            .collect();
+
+        assert!(main_state.bullet.is_none());
+
+        main_state.fire_bullet(keys, false);
+
+        assert!(main_state.bullet.is_none());
+    }
+
+    #[test]
+    fn left_mouse_button_fires_bullet() {
+        let mut main_state = main();
+        let keys = &vec![KeyCode::Z].into_iter().collect();
+
+        assert!(main_state.bullet.is_none());
+
+        main_state.fire_bullet(keys, true);
+
+        assert!(main_state.bullet.is_some());
+    }
+
+    #[test]
+    fn spacebar_fires_bullet() {
+        let mut main_state = main();
+        let keys = &vec![KeyCode::Space].into_iter().collect();
+
+        assert!(main_state.bullet.is_none());
+
+        main_state.fire_bullet(keys, false);
+
+        assert!(main_state.bullet.is_some());
+    }
+
+    fn main() -> MainState {
+        MainState {
+            tank: Tank {
+                position: na::Point2::from([300., 300.]),
+                tank_direction: na::Vector2::from([1., 1.]),
+                tank_rotation: 30.,
+                texture: None,
+                turret_texture: None,
+                turret_direction: na::Vector2::from([1., 1.]),
+                turret_rotation: 30.,
+                player: crate::state::Player::P1,
+            },
+            bullet: None,
+            coordinate: coord(),
+        }
+    }
+
+    fn coord() -> Rect {
+        Rect {
+            x: 0.,
+            y: 0.,
+            w: 900.,
+            h: 1200.,
+        }
     }
 }

@@ -11,6 +11,8 @@ use ggez::timer::delta;
 
 use crate::state::Player;
 
+pub mod bullet;
+
 pub struct Tank {
     pub position: na::Point2<f32>,
     pub tank_direction: na::Vector2<f32>,
@@ -136,6 +138,7 @@ impl Tank {
 #[cfg(test)]
 mod test {
     use super::*;
+    use float_eq::float_eq;
 
     #[test]
     fn initial_info() {
@@ -220,7 +223,7 @@ mod test {
     fn turret_rotation_direction() {
         let mut tank = tank(Player::P1);
         tank.update_turret_direction(na::Point2::from([500., 300.]));
-        assert_eq!(tank.turret_rotation, -3.1415925);
+        assert!(float_eq!(tank.turret_rotation, -3.1415925, abs <= 0.000_1));
         assert_eq!(tank.turret_direction, na::Vector2::from([1., 0.]));
 
         tank.update_turret_direction(na::Point2::from([100., 300.]));
