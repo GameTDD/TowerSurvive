@@ -26,6 +26,7 @@ pub fn main() -> ggez::GameResult {
     let sc = screen_coordinates(ctx);
 
     let tank_base = graphics::Image::new(ctx, "/TankBase.png")?;
+    let tank_dimensions = tank_base.dimensions();
 
     let mut tank = Tank {
         position: na::Point2::from([sc.w / 2., sc.h / 2.]),
@@ -35,6 +36,7 @@ pub fn main() -> ggez::GameResult {
         turret_texture: Some(graphics::Image::new(ctx, "/TankTops.png")?),
         turret_direction: na::Vector2::from([-1., 0.]),
         turret_rotation: 0.,
+        turret_width: tank_dimensions.w * 0.7,
         player: tower_survive::state::Player::P1,
     };
 
