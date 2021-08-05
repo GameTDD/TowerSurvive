@@ -28,14 +28,19 @@ pub struct MainState {
 impl MainState {
     pub fn new(ctx: &mut Context, player: Player) -> ggez::GameResult<MainState> {
         let sc = screen_coordinates(ctx);
+        let tank_base = graphics::Image::new(ctx, "/TankBase.png")?;
+        let tank_dimensions = tank_base.dimensions();
+        let turret_width = tank_dimensions.w * 0.4;
+
         let tank = Tank {
             position: na::Point2::from([sc.w / 2., sc.h / 2.]),
             tank_direction: na::Vector2::from([-1., 0.]),
             tank_rotation: 0.,
-            texture: Some(graphics::Image::new(ctx, "/TankBase.png")?),
+            texture: Some(tank_base),
             turret_texture: Some(graphics::Image::new(ctx, "/TankTops.png")?),
             turret_direction: na::Vector2::from([-1., 0.]),
             turret_rotation: 0.,
+            turret_width,
             player,
         };
         let s = MainState {
@@ -81,8 +86,9 @@ impl MainState {
         left_mouse_button_pressed: bool,
     ) {
         if keys.contains(&KeyCode::Space) || left_mouse_button_pressed {
+            let (x, y) = self.tank.get_turret_end();
             self.bullet = Some(Bullet {
-                position: na::Point2::from(self.tank.position),
+                position: na::Point2::from([x, y]),
                 direction: self.tank.turret_direction,
                 rotation: self.tank.turret_rotation,
                 origin: na::Vector2::from([self.tank.position.x, self.tank.position.y]),
@@ -148,6 +154,21 @@ mod tests {
         assert!(main_state.bullet.is_some());
     }
 
+    #[test]
+    fn fires_bullet_from_turrets_end() {
+        let mut main_state = main();
+        let keys = &Vec::new().into_iter().collect();
+
+        assert!(main_state.bullet.is_none());
+
+        main_state.fire_bullet(keys, true);
+
+        assert_eq!(
+            main_state.bullet.unwrap().position,
+            na::Point2::from([299.22873, 304.94016])
+        )
+    }
+
     fn main() -> MainState {
         MainState {
             tank: Tank {
@@ -158,6 +179,7 @@ mod tests {
                 turret_texture: None,
                 turret_direction: na::Vector2::from([1., 1.]),
                 turret_rotation: 30.,
+                turret_width: 5.,
                 player: crate::state::Player::P1,
             },
             bullet: None,

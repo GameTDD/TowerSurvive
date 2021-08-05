@@ -21,6 +21,7 @@ pub struct Tank {
     pub turret_texture: Option<graphics::Image>,
     pub turret_direction: na::Vector2<f32>,
     pub turret_rotation: f32,
+    pub turret_width: f32,
     pub player: Player,
 }
 
@@ -132,6 +133,15 @@ impl Tank {
                 w: draw_width,
             },
         }
+    }
+
+    pub fn get_turret_end(&self) -> (f32, f32) {
+        let origin = na::Point2::from(self.position);
+        let length = self.turret_width;
+        let (sin, cos) = self.turret_rotation.sin_cos();
+        let (j, i) = (length * sin, length * cos);
+
+        (origin.x - i, origin.y - j)
     }
 }
 
@@ -293,6 +303,14 @@ mod test {
         );
     }
 
+    #[test]
+    fn turrets_end() {
+        let tank = tank(Player::P1);
+        let point = tank.get_turret_end();
+
+        assert_eq!(point, (395., 300.))
+    }
+
     fn tank(player: Player) -> Tank {
         Tank {
             position: na::Point2::from([400., 300.]),
@@ -302,6 +320,7 @@ mod test {
             turret_texture: None,
             turret_direction: na::Vector2::from([-1., 0.]),
             turret_rotation: 0.,
+            turret_width: 5.,
             player,
         }
     }

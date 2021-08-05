@@ -120,6 +120,7 @@ mod tests {
                 turret_texture: None,
                 turret_direction: na::Vector2::from([1., 1.]),
                 turret_rotation: 30.,
+                turret_width: 0.,
                 player: crate::state::Player::P1,
             },
             bullet: Some(bullet()),
